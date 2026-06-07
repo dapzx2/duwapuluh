@@ -1797,23 +1797,38 @@
     <source src="images/backsound.mp3" type="audio/mpeg">
   </audio>
 
-  <div id="musicPlayer" style="position:fixed;bottom:1.4rem;left:1.2rem;z-index:7000;display:none;align-items:center;gap:.7rem;background:rgba(28,18,16,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(201,169,166,.15);border-radius:40px;padding:.5rem .9rem .5rem .6rem;box-shadow:0 4px 24px rgba(0,0,0,.25);transition:opacity .4s ease">
+  <div id="musicPlayer"
+    style="position:fixed;bottom:1.4rem;left:1.2rem;z-index:7000;display:flex;align-items:center;gap:.7rem;background:rgba(28,18,16,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(201,169,166,.15);border-radius:40px;padding:.5rem .9rem .5rem .6rem;box-shadow:0 4px 24px rgba(0,0,0,.25);transition:opacity .4s ease">
 
     <!-- Play/Pause -->
-    <button id="musicPlayBtn" onclick="toggleMusic()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(201,169,166,.15);color:#FFFCF5;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s" onmouseover="this.style.background='rgba(201,169,166,.3)'" onmouseout="this.style.background='rgba(201,169,166,.15)'">
-      <svg id="musicIconPlay" width="12" height="12" viewBox="0 0 24 24" fill="#FFFCF5"><polygon points="5,3 19,12 5,21"/></svg>
-      <svg id="musicIconPause" width="12" height="12" viewBox="0 0 24 24" fill="#FFFCF5" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+    <button id="musicPlayBtn" onclick="toggleMusic()"
+      style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(201,169,166,.15);color:#FFFCF5;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s"
+      onmouseover="this.style.background='rgba(201,169,166,.3)'"
+      onmouseout="this.style.background='rgba(201,169,166,.15)'">
+      <svg id="musicIconPlay" width="12" height="12" viewBox="0 0 24 24" fill="#FFFCF5">
+        <polygon points="5,3 19,12 5,21" />
+      </svg>
+      <svg id="musicIconPause" width="12" height="12" viewBox="0 0 24 24" fill="#FFFCF5" style="display:none">
+        <rect x="6" y="4" width="4" height="16" />
+        <rect x="14" y="4" width="4" height="16" />
+      </svg>
     </button>
 
     <!-- Song info -->
     <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
-      <p style="font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.12em;color:#FFFCF5;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;margin:0">wave to earth</p>
+      <p
+        style="font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.12em;color:#FFFCF5;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;margin:0">
+        wave to earth</p>
       <p style="font-family:'Caveat',cursive;font-size:.75rem;color:#C9A9A6;white-space:nowrap;margin:0">love.</p>
     </div>
 
     <!-- Volume -->
     <div style="display:flex;align-items:center;gap:.4rem">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A9A6" stroke-width="1.8" style="flex-shrink:0;opacity:.7"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C9A9A6" stroke-width="1.8"
+        style="flex-shrink:0;opacity:.7">
+        <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" />
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      </svg>
       <input type="range" id="musicVol" min="0" max="1" step="0.05" value="0.5"
         oninput="document.getElementById('bgAudio').volume=this.value"
         style="width:60px;height:3px;-webkit-appearance:none;appearance:none;background:rgba(201,169,166,.3);border-radius:2px;outline:none;cursor:pointer">
@@ -1821,31 +1836,46 @@
   </div>
 
   <style>
-  #musicVol::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:#C9A9A6;cursor:pointer}
-  #musicVol::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:#C9A9A6;cursor:pointer;border:none}
+    #musicVol::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #C9A9A6;
+      cursor: pointer
+    }
+
+    #musicVol::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #C9A9A6;
+      cursor: pointer;
+      border: none
+    }
   </style>
 
   <script>
-  var musicPlaying = false;
-  function showMusicPlayer(){
-    var p = document.getElementById('musicPlayer');
-    if(p){ p.style.display='flex'; }
-  }
-  function toggleMusic(){
-    var audio = document.getElementById('bgAudio');
-    var iconPlay = document.getElementById('musicIconPlay');
-    var iconPause = document.getElementById('musicIconPause');
-    if(musicPlaying){
-      audio.pause();
-      iconPlay.style.display='block'; iconPause.style.display='none';
-      musicPlaying=false;
-    } else {
-      audio.volume = document.getElementById('musicVol').value;
-      audio.play().catch(function(){});
-      iconPlay.style.display='none'; iconPause.style.display='block';
-      musicPlaying=true;
+    var musicPlaying = false;
+    function showMusicPlayer() {
+      var p = document.getElementById('musicPlayer');
+      if (p) { p.style.display = 'flex'; }
     }
-  }
+    function toggleMusic() {
+      var audio = document.getElementById('bgAudio');
+      var iconPlay = document.getElementById('musicIconPlay');
+      var iconPause = document.getElementById('musicIconPause');
+      if (musicPlaying) {
+        audio.pause();
+        iconPlay.style.display = 'block'; iconPause.style.display = 'none';
+        musicPlaying = false;
+      } else {
+        audio.volume = document.getElementById('musicVol').value;
+        audio.play().catch(function () { });
+        iconPlay.style.display = 'none'; iconPause.style.display = 'block';
+        musicPlaying = true;
+      }
+    }
   </script>
 
   <section id="chapter-one" aria-label="Chapter I — Birthday">
@@ -2060,7 +2090,7 @@
             Dava</p>
           <p
             style="font-family:'DM Sans',sans-serif;font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:#3A2E2B;opacity:.35;text-align:center;margin-top:.5rem">
-            8 Juni 2026</p>
+            .</p>
         </div>
       </div>
     </div>
@@ -2468,7 +2498,7 @@
         // Wait for gate to fully fade out before starting transition
         setTimeout(() => {
           $('gate').style.display = 'none';
-          showMusicPlayer();
+
           unlockChapterTwo();
         }, 650);
       } else {
