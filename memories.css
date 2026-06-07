@@ -1,0 +1,734 @@
+/* ═══════════════════════════════════════════════════
+   LITTLE MEMORIES — Heyzine-style Flipbook
+   memories.css — v9
+
+   Architecture: .flipbook-stage > .flipbook > .sheet
+   Mobile-first: single page, no scale hacks
+   Desktop ≥640px: two-page spread
+   Flip: .sheet.is-flipped { transform: rotateY(-180deg) }
+═══════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0
+}
+
+/* ─── TOKENS ─── */
+:root {
+  --ivory: #FFFCF5;
+  --cream: #F7F0E7;
+  --paper: #FDF8F2;
+  --rose: #C9A9A6;
+  --blush: #F0D4CA;
+  --mauve: #9B7A87;
+  --ink: #3A2E2B;
+  --ink-soft: rgba(58, 46, 43, .55);
+  --ink-50: rgba(58, 46, 43, .5);
+  --tp-pink: rgba(244, 199, 195, .55);
+  --tp-blue: rgba(184, 212, 227, .55);
+  --tp-green: rgba(200, 220, 200, .50);
+  --tp-yellow: rgba(240, 228, 184, .55);
+  --ease-snap: cubic-bezier(.16, 1, .3, 1);
+  --flip-dur: 0.85s;
+  --flip-ease: cubic-bezier(.45, 0, .2, 1);
+  /* Page dimensions — single page size */
+  --pg-w: min(180px, 44vw);
+  --pg-h: min(460px, calc(100dvh - 8.5rem));
+  /* safe from bottom nav */
+}
+
+/* ─── BASE ─── */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: linear-gradient(155deg, #C8D6E2 0%, #BAC8D8 30%, #D0DAE4 70%, #C5D0DC 100%);
+}
+
+/* ─── GRAIN ─── */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  opacity: .022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 128px;
+}
+
+/* ─── BACK BTN ─── */
+.back-btn {
+  position: fixed;
+  top: .9rem;
+  left: .9rem;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .4rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #6A7888;
+  text-decoration: none;
+  opacity: .6;
+  transition: opacity .3s;
+}
+
+.back-btn:hover {
+  opacity: 1
+}
+
+/* ─── HEADER ─── */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .7rem 1rem;
+  gap: .5rem;
+  pointer-events: none;
+}
+
+.top-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  color: #5A6878;
+  opacity: .6
+}
+
+.top-pages {
+  font-size: .38rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #8A98A8;
+  opacity: .5
+}
+
+/* ═══════════════════════════════════════════════════
+   ENTRY OVERLAY
+═══════════════════════════════════════════════════ */
+.entry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: linear-gradient(155deg, #C8D6E2, #BAC8D8, #D0DAE4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .8rem;
+  opacity: 1;
+  transition: opacity .9s .2s ease;
+  pointer-events: all;
+}
+
+.entry-overlay.out {
+  opacity: 0;
+  pointer-events: none
+}
+
+.entry-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(1.8rem, 7vw, 2.4rem);
+  color: #4E5E6E;
+  opacity: 0;
+  animation: entryFade .9s .15s var(--ease-snap) forwards;
+}
+
+.entry-sub {
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  color: #7A8898;
+  opacity: 0;
+  animation: entryFade .9s .4s var(--ease-snap) forwards;
+}
+
+.entry-hint {
+  font-size: .38rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: #90A0B0;
+  opacity: 0;
+  animation: entryFade .9s .7s var(--ease-snap) forwards;
+}
+
+@keyframes entryFade {
+  from {
+    opacity: 0;
+    transform: translateY(14px)
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   FLIPBOOK STAGE — fullscreen container
+═══════════════════════════════════════════════════ */
+.flipbook-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 0 4.5rem;
+  /* clear top-bar and bottom-nav */
+  perspective: 1800px;
+  perspective-origin: 50% 46%;
+  /* Book shadow lives here — NOT on .flipbook which needs preserve-3d */
+  filter: drop-shadow(0 8px 20px rgba(30, 20, 15, .22)) drop-shadow(3px 4px 8px rgba(30, 20, 15, .12));
+}
+
+/* ═══════════════════════════════════════════════════
+   FLIPBOOK — book container (two-page spread)
+═══════════════════════════════════════════════════ */
+.flipbook {
+  position: relative;
+  width: calc(var(--pg-w) * 2);
+  height: var(--pg-h);
+  transform-style: preserve-3d;
+  transform: rotateX(6deg);
+  opacity: 0;
+  animation: bookRise 1.2s .5s ease forwards;
+}
+
+/* Left-page backdrop — visible when at least 1 sheet is flipped */
+.flipbook::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background-color: var(--cream);
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px,
+      rgba(58, 46, 43, .018) 27px, rgba(58, 46, 43, .018) 28px);
+  border-radius: 2px 0 0 2px;
+  box-shadow: inset 3px 0 8px rgba(20, 12, 8, .06);
+  z-index: 0;
+}
+
+@keyframes bookRise {
+  from {
+    opacity: 0;
+    transform: rotateX(6deg) translateY(24px)
+  }
+
+  to {
+    opacity: 1;
+    transform: rotateX(6deg) translateY(0)
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SHEET — each page pair (front + back)
+   All sheets stacked on top of each other at start.
+   Flip = rotateY(-180deg) from right spine.
+═══════════════════════════════════════════════════ */
+.sheet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  /* spine in center — pages open right to left */
+  transform: rotateY(0deg);
+  transition: transform var(--flip-dur) var(--flip-ease);
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Flipped state */
+.sheet.is-flipped {
+  transform: rotateY(-180deg);
+}
+
+/* Remove the per-sheet shadow gradient — shadow is now on .flipbook via filter */
+
+/* ─── SHEET FACES ─── */
+.sheet-front,
+.sheet-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* Left (spine) slightly rounded, right (page edge) sharp = real book feel */
+  border-radius: 2px 0 0 2px;
+  overflow: hidden;
+  padding: 1.25rem;
+  background-color: var(--ivory);
+  /* Subtle horizontal line texture (printed page feel) */
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px,
+      rgba(58, 46, 43, .014) 27px, rgba(58, 46, 43, .014) 28px);
+  /* Inset left shadow = spine depth */
+  box-shadow: inset 3px 0 8px rgba(20, 12, 8, .06);
+  pointer-events: all;
+}
+
+.sheet-front {
+  background-color: var(--ivory);
+}
+
+.sheet-back {
+  transform: rotateY(180deg);
+  border-radius: 0 2px 2px 0;
+  /* spine now on right when flipped */
+  background-color: var(--cream);
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px,
+      rgba(58, 46, 43, .018) 27px, rgba(58, 46, 43, .018) 28px);
+  box-shadow: inset -3px 0 8px rgba(20, 12, 8, .06);
+}
+
+
+
+/* Block image drag */
+.sheet img {
+  pointer-events: none;
+  -webkit-user-drag: none
+}
+
+.sheet * {
+  user-select: none;
+  -webkit-user-select: none
+}
+
+/* ─── PAGE EDGE — crisp paper stack on right side ─── */
+.flipbook::after {
+  content: '';
+  position: absolute;
+  top: 1%;
+  bottom: 1%;
+  right: 0;
+  width: 7px;
+  /* Crisp alternating paper lines — like real book edge */
+  background: repeating-linear-gradient(to right,
+      #D8CEBE 0px, #D8CEBE 1px,
+      #EDE5DA 1px, #EDE5DA 2px,
+      #E2D8CD 2px, #E2D8CD 3px,
+      #F0EAE0 3px, #F0EAE0 4px,
+      #E6DCCF 4px, #E6DCCF 5px,
+      #F5F0E8 5px, #F5F0E8 6px,
+      #EDE5DA 6px, #EDE5DA 7px);
+  pointer-events: none;
+  /* Must be above all sheets (sheets are z-index 1..6 from JS) */
+  z-index: 500;
+  /* Thin outer shadow on right — book depth */
+  box-shadow: 2px 0 4px rgba(20, 12, 8, .18), inset -1px 0 0 rgba(20, 12, 8, .08);
+}
+
+/* ─── SPINE SHADOW ─── */
+.flipbook::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 2%;
+  bottom: 2%;
+  width: 10px;
+  background: linear-gradient(to right,
+      rgba(20, 12, 8, .2) 0%,
+      rgba(20, 12, 8, .06) 60%,
+      transparent 100%);
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+  z-index: 60;
+}
+
+/* Desktop spread — disabled until mobile is fully stable.
+   Re-enable later by removing the display:none override.
+@media (min-width: 640px) {
+  :root {
+    --pg-w: min(640px, 88vw);
+    --pg-h: min(460px, 78vh);
+  }
+  .sheet {
+    width: 50%;
+    left: 50%;
+    transform-origin: left center;
+  }
+  .sheet-front { border-radius: 0 10px 10px 0; }
+  .sheet-back  { border-radius: 10px 0 0 10px; }
+}
+*/
+
+/* ─── BOTTOM NAV ─── */
+.bottom-nav {
+  position: fixed;
+  bottom: .9rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  background: rgba(255, 255, 255, .62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: .42rem 1rem;
+  border-radius: 100px;
+  box-shadow: 0 2px 14px rgba(40, 30, 25, .1);
+}
+
+.nav-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rose);
+  opacity: .6;
+  transition: opacity .3s, background .3s;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: all;
+}
+
+.nav-btn:hover {
+  opacity: 1;
+  background: rgba(201, 169, 166, .1)
+}
+
+.nav-btn:disabled {
+  opacity: .2;
+  cursor: default
+}
+
+.nav-counter {
+  font-family: 'Caveat', cursive;
+  font-size: .95rem;
+  color: #6A7888;
+  min-width: 46px;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════
+   SCRAPBOOK VISUAL ELEMENTS
+═══════════════════════════════════════════════════ */
+
+/* Washi tape */
+.washi {
+  position: absolute;
+  height: 18px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5
+}
+
+.w-pink {
+  background: var(--tp-pink);
+  width: 52px
+}
+
+.w-blue {
+  background: var(--tp-blue);
+  width: 48px
+}
+
+.w-green {
+  background: var(--tp-green);
+  width: 50px
+}
+
+.w-yellow {
+  background: var(--tp-yellow);
+  width: 45px
+}
+
+/* Polaroid */
+.pol {
+  background: #fff;
+  padding: 5px 5px 22px;
+  box-shadow: 1px 2px 8px rgba(40, 30, 25, .1), 0 1px 3px rgba(40, 30, 25, .06);
+  position: absolute;
+  border-radius: 1px;
+}
+
+.pol img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--blush);
+  pointer-events: none;
+}
+
+.pol-cap {
+  font-family: 'Caveat', cursive;
+  font-size: .72rem;
+  color: var(--ink-50);
+  text-align: center;
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
+/* Number sticker */
+.sticker {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4
+}
+
+.sticker-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--blush);
+  font-family: 'Caveat', cursive;
+  font-size: .82rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Circle pen highlight */
+.circled {
+  display: inline-block;
+  border: 2px solid #D04040;
+  border-radius: 50%;
+  padding: 2px 8px;
+}
+
+/* Doodles */
+.doodle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  opacity: .28
+}
+
+/* Typography */
+.pg-hand {
+  font-family: 'Caveat', cursive;
+  color: var(--ink);
+  line-height: 1.4
+}
+
+.pg-serif {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--ink);
+  font-weight: 300
+}
+
+.pg-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .37rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--rose);
+  opacity: .6;
+}
+
+/* Love notes */
+.love-note {
+  background: var(--paper);
+  border: 1px solid rgba(201, 169, 166, .12);
+  border-radius: 7px;
+  padding: .65rem;
+  text-align: center;
+  position: absolute;
+  box-shadow: 1px 2px 6px rgba(40, 30, 25, .06);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .35s var(--ease-snap);
+}
+
+.love-note .ln-front {
+  transition: opacity .3s
+}
+
+.love-note .ln-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .45rem;
+  font-family: 'Caveat', cursive;
+  font-size: .76rem;
+  color: var(--ink);
+  opacity: 0;
+  transition: opacity .3s;
+  background: var(--paper);
+  border-radius: inherit;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.love-note.open .ln-front {
+  opacity: 0
+}
+
+.love-note.open .ln-back {
+  opacity: 1
+}
+
+/* Envelope */
+.mini-env {
+  position: absolute;
+  width: 88px;
+  height: 60px;
+  background: linear-gradient(180deg, #F0E8DE, #FAF4EC);
+  border: 1px solid rgba(180, 160, 140, .18);
+  border-radius: 2px 2px 4px 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .28s var(--ease-snap);
+  z-index: 4;
+}
+
+.env-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 29px;
+  background: linear-gradient(180deg, #E8DDD4, #F0E8DE);
+  clip-path: polygon(0 0, 50% 100%, 100% 0);
+  transition: transform .55s var(--ease-snap);
+  transform-origin: top center;
+  z-index: 1;
+}
+
+.mini-env.opened .env-flap {
+  transform: rotateX(180deg)
+}
+
+.env-label {
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-size: .56rem;
+  color: var(--mauve);
+}
+
+/* Env message popup */
+.env-msg {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(24, 18, 14, .72);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s;
+}
+
+.env-msg.show {
+  opacity: 1;
+  pointer-events: all
+}
+
+.env-msg-card {
+  background: var(--ivory);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  max-width: 300px;
+  width: 84vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+  text-align: center;
+  transform: scale(.9) translateY(20px);
+  transition: transform .5s var(--ease-snap);
+}
+
+.env-msg.show .env-msg-card {
+  transform: scale(1) translateY(0)
+}
+
+.env-msg-card p {
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  color: var(--ink);
+  line-height: 1.8
+}
+
+.env-msg-close {
+  font-size: .4rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--rose);
+  opacity: .5;
+  margin-top: 1.1rem;
+  cursor: pointer;
+}
+
+/* Sparkles */
+.final-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden
+}
+
+.sparkle {
+  position: absolute;
+  opacity: 0;
+  animation: sparkPop 1.3s var(--ease-snap) forwards;
+}
+
+@keyframes sparkPop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg)
+  }
+
+  40% {
+    opacity: .75;
+    transform: scale(1.4) rotate(45deg)
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(.6) rotate(90deg) translateY(-32px)
+  }
+}
+
+/* Cover gradient */
+.cover-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 38% 28%, rgba(201, 169, 166, .14) 0%, transparent 62%);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
